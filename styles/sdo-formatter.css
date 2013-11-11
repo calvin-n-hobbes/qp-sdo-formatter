@@ -1,0 +1,61 @@
+body {
+    font-family: arial, helvetica, sans-serif;
+    font-size: 12px;
+    margin-left: 5%;
+    margin-right: 5%;
+}
+
+.formbox {
+    border:2px solid #cccc99;
+    border-radius:4px;
+    padding: 20px;
+    padding-top: 0px;
+}
+
+
+.xmlview {
+    border: solid #95b7cd 1px;
+}
+
+.xmltextinput {
+    width: 100%;
+    border: solid #95b7cd 1px;
+}
+
+.console {
+    width: 75%;
+    padding: 10px;
+    color: lime;
+    background: #333333;
+}
+
+.debug {
+    display: none;
+}
+
+.sdotree {
+}
+
+
+.spacer {
+    display: inline-block;
+    width: 150px;
+}
+
+.entity {
+    display: inline-block;
+    padding: 10px 15px;
+    border:2px solid;
+    border-radius: 20px;
+    background: #dddddd;
+}
+
+.entityname {
+    display: block;
+    padding: 0px;
+    margin-left: auto;
+    margin-right: auto;
+    width: 150px;
+    text-align: center;
+    font-weight: bold;
+}
