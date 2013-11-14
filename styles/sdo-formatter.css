@@ -2,7 +2,6 @@ body {
     font-family: arial, helvetica, sans-serif;
     font-size: 12px;
     margin-left: 5%;
-    margin-right: 5%;
 }
 
 .formbox {
@@ -27,6 +26,10 @@ body {
     padding: 10px;
     color: lime;
     background: #333333;
+    border-color: lightgrey;
+    border-width: 4px;
+    border-style: double;
+    border-radius: 10px;
 }
 
 .debug {
@@ -39,7 +42,7 @@ body {
 
 .spacer {
     display: inline-block;
-    width: 150px;
+    width: 125px;
 }
 
 .entity {
@@ -48,6 +51,10 @@ body {
     border:2px solid;
     border-radius: 20px;
     background: #dddddd;
+}
+
+.rollup {
+    background: lightpink;
 }
 
 .entityname {
