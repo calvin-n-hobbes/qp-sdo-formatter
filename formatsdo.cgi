@@ -76,7 +76,7 @@ else {
 
     print "<div class=\"sdotree\">\n"; 
     print $q->h3("Here is your SDO!") . "\n";
-    print "Click an entity name to hide or show its details.<br />\n";
+    print "Click an entity name to hide or show its details. Pink entities represent roll-ups (e.g., roll-up charge, aggregate charge component).<br />\n";
     ### iterate down the node tree and print entities
     &traverse_tree($node_map{$root_tag}, 0);
     print "</div>\n";
@@ -112,10 +112,12 @@ sub print_form {
                        -class => 'xmltextinput') . "\n";
     print "</p>\n";
     print "<p>\n";
-    print "Specify the <b>root element name</b> without namespace (typically 'result' or 'PriceRequestInternalType'):" . $q->br . "\n";
+    print "<i>BETA</i>: The script will try to detect the root element." . $q->br . "\n";
+    print "<strike>Specify the <b>root element name</b> without namespace (typically 'result' or 'PriceRequestInternalType'):</strike>" . $q->br . "\n";
     print $q->textfield(-name => 'root_tag',
                         -value => 'result',
-                        -size => 60) . $q->br . "\n";
+                        -size => 60,
+                        -disabled => 1) . $q->br . "\n";
     print "</p>\n";
     print $q->submit(-name => 'submit_form',
                      -value => 'Submit') . "\n";
@@ -140,9 +142,16 @@ sub handle_start {
     my $tag = $2;
 
     # start processing only if the root tag is reached
-    if ( !$root_tag_found and $tag eq $root_tag ) {
-        $root_tag_found = 1;
-        $root_tag_level = $xml_tree_level;
+    #if ( !$root_tag_found and $tag eq $root_tag ) {
+    if ( !$root_tag_found ) {
+        foreach ( values %attrs ) {
+            if ( /^http\:\/\/xmlns\.oracle\.com\/apps\/scm\/pricing\/priceExecution\/pricingProcesses\/((priceRequestService\/)|(PriceRequestInternal))$/ ) {
+                print "handle_start(): found root element $tag" . $q->br . "\n";
+                $root_tag_found = 1;
+                $root_tag_level = $xml_tree_level;
+                last;
+            }
+        }
     }
     return if !$root_tag_found;
 
@@ -298,16 +307,47 @@ sub print_entity {
     my @entity = @{$entity_ref};
     my $hash_str = &generate_hash($entity_ref);
     my $display_str = $entity[ENTITY_NAME];
+    my %attrs = %{$entity[ENTITY_ATTRS]};
 
     print $q->br . "\n";
     print "<div class=\"spacer\">&nbsp;</div>" x ($indent_level) . "\n";
-    print "<div class=\"entity\">\n";
+    # roll-up entities have a different color
+    if ( $attrs{"RollupFlag"} eq "true" ) {
+        print "<div class=\"entity rollup\">\n";
+    }
+    else {
+        print "<div class=\"entity\">\n";
+    }
     print "<div class=\"entityname\" onClick=\"toggle_visibility('$hash_str')\">$display_str</div>\n";
     print "<div id=\"$hash_str\" style=\"display: none;\">\n";
     print $q->hr . "\n";
-    my %attrs = %{$entity[ENTITY_ATTRS]};
+
     foreach my $attr (sort keys %attrs) {
-        print "$attr: " . $attrs{$attr} . $q->br . "\n";
+        my $attrname = $attr;
+        my $attrval = $attrs{$attr};
+
+        # expand a camel-case attribute name with spaces
+        $attrname =~ s/([a-z])([A-Z])/$1 $2/g;
+        # special handling for the word "UOM"
+        $attrname =~ s/(UOM)([A-Z])/$1 $2/g;
+        # turn "Id" into "ID"
+        $attrname =~ s/(\s)Id/$1ID/;
+
+        # custom visual transformations for attribute values
+        # Boolean true
+        if ( $attrval eq "true" or $attrval eq 'Y' ) {
+            $attrval = "<span style=\"color: #00CC33;\">&#x2714;</span>";
+        }
+        # Boolean false
+        elsif ( $attrval eq "false" or $attrval eq 'N' ) {
+            $attrval = "<span style=\"color: red;\">&#x2718;</span>";
+        }
+        # dates
+        elsif ( $attrval =~ /^(\d{4}\-\d{2}\-\d{2})T(\d{2}\:\d{2}\:\d{2})/) {
+            $attrval = "$1 @ $2";
+        }
+
+        print "$attrname: " . $attrval . $q->br . "\n";
     }
     print "</div>\n";
     print "</div><br />\n";
