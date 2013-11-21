@@ -149,6 +149,7 @@ sub handle_start {
                 print "handle_start(): found root element $tag" . $q->br . "\n";
                 $root_tag_found = 1;
                 $root_tag_level = $xml_tree_level;
+                $root_tag = $tag;
                 last;
             }
         }
@@ -245,7 +246,7 @@ sub generate_hash {
     }
     else {
         my $guess = $entity_ref->[ENTITY_ATTRS]->{$entity_name . "Id"};
-        if ( $guess ) {
+        if ( $guess ne '' ) {
             $hash_val = $entity_name . "_" . $guess;
         }
         else {
@@ -277,15 +278,15 @@ sub construct_relationships {
             # attach line to header
             $parent_hash_str = "Header_" . $attrs{"HeaderId"};
         }
-        elsif ( $name eq "Charge" and $attrs{"ParentEntityCode"} eq "LINE" and $attrs{"ParentEntityId"} ) {
+        elsif ( $name eq "Charge" and $attrs{"ParentEntityCode"} eq "LINE" and $attrs{"ParentEntityId"} ne '' ) {
             # attach charge to line
             $parent_hash_str = "Line_" . $attrs{"ParentEntityId"};
         }
-        elsif ( $name eq "ChargeCandidate" and $attrs{"ParentEntityCode"} eq "LINE" and $attrs{"ParentEntityId"} ) {
+        elsif ( $name eq "ChargeCandidate" and $attrs{"ParentEntityCode"} eq "LINE" and $attrs{"ParentEntityId"} ne '' ) {
             # attach charge candidate to line
             $parent_hash_str = "Line_" . $attrs{"ParentEntityId"};
         }
-        elsif ( $name eq "ChargeComponent" and $attrs{"ChargeId"} ) {
+        elsif ( $name eq "ChargeComponent" and $attrs{"ChargeId"} ne '' ) {
             # attach charge component to charge
             $parent_hash_str = "Charge_" . $attrs{"ChargeId"};
         }
