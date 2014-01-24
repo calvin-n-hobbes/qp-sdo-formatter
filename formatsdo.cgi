@@ -10,8 +10,8 @@ use constant {
     ENTITY_ATTRS => 1,
     NODE_ENTITY => 0,
     NODE_CHILDREN => 1,
-};
-
+}; 
+    
 ##################
 # global variables
 ##################
@@ -29,26 +29,26 @@ our $current_node_ref;
 # initialize CGI and parser
 my $q = CGI->new;
 my $parser = XML::Parser->new(Handlers => {Start => \&handle_start, Char => \&handle_char, End => \&handle_end});
-
-
+    
+    
 print $q->header();
 
 print $q->start_html(-title => 'Pricing SDO Formatter',
                      -style => {'src' => '/styles/sdo-formatter.css'},
                      -script => {-language => 'javascript', -src => '/src/sdo-formatter.js'});
-
+    
 ### MAIN PAGE LOGIC ###
 if ( !$q->param() ) { # if no parameters, then print the form
     &print_form();
-}
+}   
 else {
     print "<div style=\"margin-left: 5%; margin-right: 5%;\">\n";
     print $q->h2("Pricing SDO Formatter") . "\n";
     print "<div class=\"console\">\n";
     print $q->p($q->u({-onClick => "toggle_visibility('debug');"}, 'Debug Console')) . "\n";
     print "<div id=\"debug\" class=\"debug\">\n";
-
-    $root_tag = $q->param('root_tag');
+    
+    $root_tag = $q->param('root_tag'); # deprecated
     print "Received root element '$root_tag'" . $q->br . "\n";
     my $payload = $q->param('sdo');
     #print $q->div('The request payload is:', $q->blockquote($q->pre($q->escapeHTML($payload))));
@@ -74,9 +74,9 @@ else {
     # print results
     #################
 
-    print "<div class=\"sdotree\">\n"; 
+    print "<div class=\"sdotree\">\n";
     print $q->h3("Here is your SDO!") . "\n";
-    print "Click an entity name to hide or show its details. Pink entities represent roll-ups (e.g., roll-up charge, aggregate charge component).<br />\n";
+    print "Click an entity name to hide or show its details. <span class=\"rollup\">Pink entities</span> represent roll-ups (e.g., roll-up charge, aggregate charge component).<br />\n";
     ### iterate down the node tree and print entities
     &traverse_tree($node_map{$root_tag}, 0);
     print "</div>\n";
@@ -100,8 +100,8 @@ sub print_form {
     print "<div style=\"margin-left: 5%; margin-right: 5%;\">\n";
     print $q->h2("Pricing SDO Formatter") . "\n";
     print $q->p("This will try to format the raw XML output from the Fusion Pricing service into something more human-readable, ",
-        "establishing known parent-child relationships between entities like <tt>Header</tt>, <tt>Line</tt>, <tt>Charge</tt>, and ",
-        "<tt>ChargeComponent</tt>. <i>NOTE: This is only tested on Firefox.</i>") . "\n";
+        "establishing known parent-child relationships between entities like <tt>Header</tt>, <tt>Line</tt>, <tt>Charge</tt>, ",
+        "<tt>ChargeComponent</tt>, and <tt>ChargeInput</tt>. <i>NOTE: This is only tested on Firefox.</i>") . "\n";
     print "<div class=\"formbox\">\n";
     print $q->start_form . "\n";
     print "<p>\n";
@@ -146,7 +146,7 @@ sub handle_start {
     if ( !$root_tag_found ) {
         foreach ( values %attrs ) {
             if ( /^http\:\/\/xmlns\.oracle\.com\/apps\/scm\/pricing\/priceExecution\/pricingProcesses\/((priceRequestService\/)|(PriceRequestInternal))$/ ) {
-                print "handle_start(): found root element $tag" . $q->br . "\n";
+                print "<span style=\"color: grey;\">handle_start():</span> found root element $tag" . $q->br . "\n";
                 $root_tag_found = 1;
                 $root_tag_level = $xml_tree_level;
                 $root_tag = $tag;
@@ -161,10 +161,10 @@ sub handle_start {
         # create empty node to serve as placeholder for the root
         $node_map{$root_tag} = [[$root_tag, {}], []];
     }
+
     elsif ( $diff==1 ) { # context entity
         $current_entity_ref = [$tag, {}];
-
-        print "handle_start(): entity " . $tag . $q->br . "\n";
+        print "<span style=\"color: grey;\">handle_start():</span> entity " . $tag . $q->br . "\n";
     }
     elsif ( $diff==2 ) { # context entity attribute
         # prepare a new attribute record
@@ -172,16 +172,16 @@ sub handle_start {
         $current_attr_val = '';
         $current_attr_suffix = '';
 
-        print "handle_start(): attribute " . $tag . $q->br . "\n";
+        print "<span style=\"color: grey;\">handle_start():</span> attribute " . $tag . $q->br . "\n";
 
         # the only XML attributes we're interested in are unitCode and currencyCode
         if ( $attrs{'unitCode'} ) {
             $current_attr_suffix = "$attrs{'unitCode'}";
-            print "handle_start(): unitCode = " . $current_attr_suffix . $q->br . "\n";
+            print "<span style=\"color: grey;\">handle_start():</span> unitCode = " . $current_attr_suffix . $q->br . "\n";
         }
         elsif ( $attrs{'currencyCode'} ) {
             $current_attr_suffix = $attrs{'currencyCode'};
-            print "handle_start(): currencyCode = " . $current_attr_suffix . $q->br . "\n";
+            print "<span style=\"color: grey;\">handle_start():</span> currencyCode = " . $current_attr_suffix . $q->br . "\n";
         }
     }
 
@@ -216,7 +216,7 @@ sub handle_end {
     }
     elsif ( $diff==1 ) { # construct node once we have entity
         $current_node_ref = [$current_entity_ref, []];
-
+    
         push @node_list, $current_node_ref;
         $node_map{&generate_hash($current_entity_ref)} = $current_node_ref;
     }
@@ -244,7 +244,7 @@ sub generate_hash {
     if ( $entity_name eq $root_tag ) {
         $hash_val = $root_tag;
     }
-    else {
+    else { 
         my $guess = $entity_ref->[ENTITY_ATTRS]->{$entity_name . "Id"};
         if ( $guess ne '' ) {
             $hash_val = $entity_name . "_" . $guess;
@@ -290,83 +290,16 @@ sub construct_relationships {
             # attach charge component to charge
             $parent_hash_str = "Charge_" . $attrs{"ChargeId"};
         }
+        elsif ( $name eq "ChargeInput" and $attrs{"ChargeParentEntityCode"} eq "LINE" and $attrs{"ChargeParentEntityId"} ne '' ) {
+            # attach charge input to line
+            $parent_hash_str = "Line_" . $attrs{"ChargeParentEntityId"};
+        }
         else {
             # attach to the root tag
             $parent_hash_str = $root_tag;
         }
         @parent_node = @{$node_map{$parent_hash_str}};
         push @{$parent_node[NODE_CHILDREN]}, $node_ref;
-        print "construct_relationships(): attaching " . &generate_hash($entity_ref) . " to " . &generate_hash($parent_node[NODE_ENTITY]) . $q->br . "\n";
-    }
-}
-
-
-
-
-sub print_entity {
-    my ($entity_ref, $indent_level) = @_;
-    my @entity = @{$entity_ref};
-    my $hash_str = &generate_hash($entity_ref);
-    my $display_str = $entity[ENTITY_NAME];
-    my %attrs = %{$entity[ENTITY_ATTRS]};
-
-    print $q->br . "\n";
-    print "<div class=\"spacer\">&nbsp;</div>" x ($indent_level) . "\n";
-    # roll-up entities have a different color
-    if ( $attrs{"RollupFlag"} eq "true" ) {
-        print "<div class=\"entity rollup\">\n";
-    }
-    else {
-        print "<div class=\"entity\">\n";
-    }
-    print "<div class=\"entityname\" onClick=\"toggle_visibility('$hash_str')\">$display_str</div>\n";
-    print "<div id=\"$hash_str\" style=\"display: none;\">\n";
-    print $q->hr . "\n";
-
-    foreach my $attr (sort keys %attrs) {
-        my $attrname = $attr;
-        my $attrval = $attrs{$attr};
-
-        # expand a camel-case attribute name with spaces
-        $attrname =~ s/([a-z])([A-Z])/$1 $2/g;
-        # special handling for the word "UOM"
-        $attrname =~ s/(UOM)([A-Z])/$1 $2/g;
-        # turn "Id" into "ID"
-        $attrname =~ s/(\s)Id/$1ID/;
-
-        # custom visual transformations for attribute values
-        # Boolean true
-        if ( $attrval eq "true" or $attrval eq 'Y' ) {
-            $attrval = "<span style=\"color: #00CC33;\">&#x2714;</span>";
-        }
-        # Boolean false
-        elsif ( $attrval eq "false" or $attrval eq 'N' ) {
-            $attrval = "<span style=\"color: red;\">&#x2718;</span>";
-        }
-        # dates
-        elsif ( $attrval =~ /^(\d{4}\-\d{2}\-\d{2})T(\d{2}\:\d{2}\:\d{2})/) {
-            $attrval = "$1 @ $2";
-        }
-
-        print "$attrname: " . $attrval . $q->br . "\n";
-    }
-    print "</div>\n";
-    print "</div><br />\n";
-}
-
-
-
-
-sub traverse_tree {
-    my ($root_node_ref, $depth) = @_;
-    my $entity_ref = $root_node_ref->[NODE_ENTITY];
-    my $children_ref = $root_node_ref->[NODE_CHILDREN];
-
-    if ( $entity_ref->[ENTITY_NAME] ne $root_tag ) {
-        &print_entity($entity_ref, $depth++);
-    }
-
-    foreach (@{$children_ref}) {
-        &traverse_tree($_, $depth);
+        print "<span style=\"color: grey;\">construct_relationships():</span> attaching " . &generate_hash($entity_ref) . " to " . &generate_hash($parent_node[NODE_ENTITY]) . $q->br . "\n";
     }
 }
