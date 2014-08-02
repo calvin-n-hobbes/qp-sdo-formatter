@@ -305,6 +305,10 @@ sub construct_relationships {
             # attach sales order total component to sales order total
             $parent_hash_str = "SalesOrderTotal_" . $attrs{"TotalId"};
         }
+        elsif ($name eq "TaxLineDetail" and $attrs{"ChargeComponentId"}) {
+            # attach tax line detail to charge component
+            $parent_hash_str = "ChargeComponent_" . $attrs{"ChargeComponentId"};
+        }
         else {
             # attach to the root tag
             $parent_hash_str = $root_tag;
