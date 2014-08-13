@@ -2,6 +2,7 @@
 
 use strict;
 use CGI;
+use Date::Format;
 use Time::HiRes qw( gettimeofday );
 use XML::Parser;
 
@@ -76,7 +77,8 @@ else {
 
     print "<div class=\"sdotree\">\n"; 
     print $q->h3("Here is your SDO!") . "\n";
-    print "Click an entity name to hide or show its details. <span class=\"rollup\">Pink entities</span> represent roll-ups (e.g., roll-up charge, aggregate charge component).<br />\n";
+    print "<p>Click an entity name to hide or show its details.</p>\n";
+    print "<p><span class=\"rollup\">Green entities</span> represent <u>roll-ups</u> (e.g., roll-up charge, aggregate charge component). <span class=\"errormessage\">Red entities</span> represent pricing <u>error messages</u>.<br />\n";
     ### iterate down the node tree and print entities
     &traverse_tree($node_map{$root_tag}, 0);
     print "</div>\n";
@@ -123,6 +125,7 @@ sub print_form {
                      -value => 'Submit') . "\n";
     print $q->end_form . "\n";
     print "</div>\n";
+    print "<p><em>Last modified " . time2str('%a %h %d, %Y', (stat $0)[9]) . "</em></p>\n";
     print "</div>\n";
 }
 
@@ -301,6 +304,12 @@ sub construct_relationships {
             # attach charge input to line
             $parent_hash_str = "Line_" . $attrs{"ChargeParentEntityId"};
         }
+        elsif ($name eq "PricingMessage" and $attrs{"ParentEntityCode"} eq "LINE" and $attrs{"ParentEntityId"} ne '') {
+            $parent_hash_str = "Line_" . $attrs{"ParentEntityId"};
+        }
+        elsif ($name eq "PricingMessage" and $attrs{"ParentEntityCode"} eq "HEADER" and $attrs{"ParentEntityId"} ne '') {
+            $parent_hash_str = "Header_" . $attrs{"ParentEntityId"};
+        }
         elsif ($name eq "SalesOrderTotalComponent" and $attrs{"TotalId"}) {
             # attach sales order total component to sales order total
             $parent_hash_str = "SalesOrderTotal_" . $attrs{"TotalId"};
@@ -334,6 +343,10 @@ sub print_entity {
     # roll-up entities have a different color
     if ( $attrs{"RollupFlag"} eq "true" ) {
         print "<div class=\"entity rollup\">\n";
+    }
+    # so do error pricing messages
+    elsif ($display_str eq "PricingMessage" && $attrs{"MessageTypeCode"} eq "ERROR") {
+        print "<div class=\"entity errormessage\">\n";
     }
     else {
         print "<div class=\"entity\">\n";
