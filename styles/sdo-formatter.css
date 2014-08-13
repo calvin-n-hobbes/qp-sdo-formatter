@@ -54,7 +54,11 @@ body {
 }
 
 .rollup {
-    background: lightpink;
+    background: #c2ffad;
+}
+
+.errormessage {
+    background: lightcoral;
 }
 
 .entityname {
