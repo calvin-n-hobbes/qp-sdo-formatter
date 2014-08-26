@@ -83,7 +83,7 @@ else {
     &traverse_tree($node_map{$root_tag}, 0);
     print "</div>\n";
 
-    print $q->p($q->a({href => $q->url(-relative => 1)}, 'Do another'));
+    print $q->p($q->a({href => $q->url(-relative => 1)}, 'Format another SDO'));
     print "</div>\n";
 }
 
@@ -125,7 +125,7 @@ sub print_form {
                      -value => 'Submit') . "\n";
     print $q->end_form . "\n";
     print "</div>\n";
-    print "<p><em>Last modified " . time2str('%a %h %d, %Y', (stat $0)[9]) . "</em></p>\n";
+    print "<p><em>Last modified " . time2str('%a %h %d, %Y', (stat $0)[9]) . " by Justin Kuo</em></p>\n";
     print "</div>\n";
 }
 
