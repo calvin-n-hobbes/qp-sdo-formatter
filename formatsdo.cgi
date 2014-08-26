@@ -55,17 +55,19 @@ else {
     #print $q->div('The request payload is:', $q->blockquote($q->pre($q->escapeHTML($payload))));
 
     # parse SDO
-    $parser->parse($payload);
+    eval { $parser->parse($payload) };
 
     #foreach my $node (@node_list) {
     #    print &generate_hash(${$node}[NODE_ENTITY]) . $q->br . "\n";
     #}
     print "There are <b>" . scalar(keys %node_map) . "</b> nodes in the hash and <b>" . scalar(@node_list) . "</b> nodes in the array." . $q->br . "\n";
 
-    &construct_relationships();
+    if (@node_list) {
+        &construct_relationships();
 
-    my @root_node = @{$node_map{$root_tag}};
-    print "The root has <b>" . scalar(@{$root_node[NODE_CHILDREN]}) . "</b> children." . $q->br . "\n";
+        my @root_node = @{$node_map{$root_tag}};
+        print "The root has <b>" . scalar(@{$root_node[NODE_CHILDREN]}) . "</b> children." . $q->br . "\n";
+    }
 
     print "</div>\n";
     print "</div>\n";
@@ -75,13 +77,29 @@ else {
     # print results
     #################
 
-    print "<div class=\"sdotree\">\n"; 
-    print $q->h3("Here is your SDO!") . "\n";
-    print "<p>Click an entity name to hide or show its details.</p>\n";
-    print "<p><span class=\"rollup\">Green entities</span> represent <u>roll-ups</u> (e.g., roll-up charge, aggregate charge component). <span class=\"errormessage\">Red entities</span> represent pricing <u>error messages</u>.<br />\n";
-    ### iterate down the node tree and print entities
-    &traverse_tree($node_map{$root_tag}, 0);
-    print "</div>\n";
+    # print SDO tree if successfully parsed
+    if (@node_list) {
+        print "<div class=\"sdotree\">\n"; 
+        print $q->h3("Here is your SDO!") . "\n";
+        print "<p>Click an entity name to hide or show its details.</p>\n";
+        print "<p><span class=\"rollup\">Green entities</span> represent <u>roll-ups</u> (e.g., roll-up charge, aggregate charge component). <span class=\"errormessage\">Red entities</span> represent pricing <u>error messages</u>.<br />\n";
+        ### iterate down the node tree and print entities
+        &traverse_tree($node_map{$root_tag}, 0);
+        print "</div>\n";
+    }
+    # otherwise print innocuous error message
+    else {
+        print "<div>\n";
+        print $q->h3("Error parsing SDO!") . "\n";
+        print "<p>The script was unable to read the SDO properly.</p>\n";
+        print "<p>This could be because of:\n";
+        print "<ul>\n";
+        print "<li>malformed XML (check your input again)</li>\n";
+        print "<li>undetected root element (must have a correct <tt>xmlns</tt> attribute)</li>\n";
+        print "<li>invalid foreign key pointer in the SDO entities (check the debug console above for any useful messages)</li>\n";
+        print "</ul>\n</p>\n";
+        print "</div>\n";
+    }
 
     print $q->p($q->a({href => $q->url(-relative => 1)}, 'Format another SDO'));
     print "</div>\n";
