@@ -101,7 +101,12 @@ else {
         print "</div>\n";
     }
 
-    print $q->p($q->a({href => $q->url(-relative => 1)}, 'Format another SDO'));
+    # render button to start over
+    print "<br>" . $q->hr . "<br>\n";
+    print $q->start_form(-action => $q->url(-relative => 1)) . "\n";
+    print $q->submit(-value => "Start Over") . "\n";
+    print $q->end_form . "\n";
+
     print "</div>\n";
 }
 
